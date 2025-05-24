@@ -1,0 +1,23 @@
+mainapp.local.dev {
+    reverse_proxy app_main:80
+}
+
+nodebackend.local.dev {
+    reverse_proxy backend_node:3000
+}
+
+flutterweb.local.dev {
+    reverse_proxy flutter_web:8080
+}
+
+adminer.local.dev {
+    reverse_proxy adminer:8080
+}
+
+minio.local.dev {
+    reverse_proxy minio:9001
+}
+
+clickhouse.local.dev {
+    reverse_proxy clickhouse:8123
+}

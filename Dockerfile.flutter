@@ -1,0 +1,12 @@
+FROM cirrusci/flutter:stable
+
+WORKDIR /app
+
+# Source code Flutter dimount via volume.
+# Untuk build otomatis (opsional, bisa juga build manual dari host):
+# RUN flutter pub get
+# RUN flutter build web
+
+# Untuk serve hasil build, bisa pakai nginx, Caddy, atau container lain
+
+CMD ["bash"]

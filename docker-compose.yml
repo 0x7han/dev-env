@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+  # Main Web App: Laravel + Vite (PHP + Node.js)
+  app_main:
+    build:
+      context: .
+      dockerfile: Dockerfile.laravel
+    container_name: app_main
+    working_dir: /app
+    volumes:
+      - ./apps/project-main:/app
+    networks:
+      - devnet
+    depends_on:
+      - postgres
+      - redis
+      - beanstalkd
+      - minio
+      - clickhouse
+
+  # Node.js Backend untuk Project Flutter
+  backend_node:
+    image: node:20
+    container_name: backend_node
+    working_dir: /usr/src/app
+    volumes:
+      - ./apps/project-flutter/backend:/usr/src/app
+    command: sh -c "npm install && npm run dev"
+    networks:
+      - devnet
+
+  # Flutter Web Build
+  flutter_web:
+    build:
+      context: .
+      dockerfile: Dockerfile.flutter
+    container_name: flutter_web
+    working_dir: /app
+    volumes:
+      - ./apps/project-flutter:/app
+    # Expose port jika ingin serve build result langsung
+    # ports:
+    #   - "8080:8080"
+    networks:
+      - devnet
+
+  # --- Shared Services ---
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: devdb
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devpass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - devnet
+
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: unless-stopped
+    networks:
+      - devnet
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse
+    restart: unless-stopped
+    ports:
+      - "8123:8123"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    networks:
+      - devnet
+
+  beanstalkd:
+    image: schickling/beanstalkd:latest
+    container_name: beanstalkd
+    restart: unless-stopped
+    networks:
+      - devnet
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    networks:
+      - devnet
+
+  adminer:
+    image: adminer:4
+    container_name: adminer
+    restart: unless-stopped
+    networks:
+      - devnet
+
+  # Caddy Reverse Proxy
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - devnet
+    depends_on:
+      - app_main
+      - backend_node
+      - flutter_web
+      - adminer
+      - minio
+      - clickhouse
+
+networks:
+  devnet:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  clickhouse_data:
+  minio_data:
+  caddy_data:
+  caddy_config:

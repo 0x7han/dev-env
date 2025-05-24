@@ -1,0 +1,14 @@
+FROM dunglas/frankenphp:1.2.0-php8.2
+
+# Install Node.js (for Vite, Laravel Mix, etc)
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs npm && \
+    npm install -g npm
+
+WORKDIR /app
+
+# Source code dimount via volume (tidak perlu copy di dev)
+
+EXPOSE 80 5173 3000
+
+CMD ["bash"]
